@@ -1,0 +1,8 @@
+{
+  "portalPort": "4200",
+  "slackApiKey": "Slack API KEY",
+  "slackBotName": "HLM1",
+  "particleDeviceId": "Particle Device ID",
+  "particlePassword": "particle.io password",
+  "particleUsername": "particle.io username"
+}
