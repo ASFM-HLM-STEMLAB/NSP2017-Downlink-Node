@@ -1,19 +1,16 @@
 # NSP2017-Uplink-Node
 ASFM Near Space Program 2017
-Uplink Server to relay and persist capsule Messages for telemetry
+Uplink/Downlink Server to relay and persist capsule Messages for telemetry and realtime monitoring.
 
 ## What is it?
-This app is designed to keep running as a server to receive messages transmitted by the capsule at any time either via cellular modem or Iridium Satellite modem (RockBlock module).
+Node.js APP Designed to keep running as a server or daemon to receive messages transmitted by the capsule at any time either thru cellular modem or Iridium Satellite modem (RockBlock module).
 
-Uses node express module for http end-point (and the particle API) to await for messages.
-When a message arrives it persists them in a local file for later retrieval.
-Will also relay new messages to all ground control apps connected.
+When a message arrives it persists them in a local file and also broadcast it or relay it to all connected ground control connected apps.
 
-Also included is an http console to interact with the capsule and the server at any time: *http://yourserver.com:4200/*
+Also includes a WebApp console to interact with the capsule: *http://yourserver.com:4200/*
 *See:* [Ground Control's Git Repository](https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS) 
 
-Ground control app connects to the server using Sockets technology via Socket.io framework for realtime comunications.
-
+Also serves the socket communications to all Ground Control Apps.
 
 ## Requirements + Setup
 
