@@ -12,16 +12,33 @@ upon arrival.
 GroundControl apps connected to the server will also receive in realtime messages gathered and relayed by the server.
 See: https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS
 
-## Spec
-- Developed and written in NodeJS version v8.9.1
 
-## Setup
-- Rename the file setup-sample.json to setup.json
-- Edit values with your own [see 3d party privders for keys]
-- In a terminal window, type: npm update
+## Requirements + Setup
+
+### Sat WebHook/Delivery Groups
+- Visit: rockblock.rock7.com website and setup a delivery group with endpoing: http://yourserver.com:4200/satcom
+-- Note1: Change :4200 to the defined port in setup.json file.
+
+### Cell Modem (Particle.io) WebHook/Integration
+- Visit www.particle.io 
+- Create an account and register your electron device. 
+- Note the deviceId to include in the *setup.json* file
+
+### Slack Integration/Slackbot API
+- Visit: Slack.com and get an SlackBot API Key.
+- Note your slackBot API Key
+
+### Requirements
+- Node JS (Tested with v8.9.1 on MacOS High Sierra)
+
+### Setup
+- Rename the *setup-sample.json* file to *setup.json*
+- Edit values in the file with your desired values
+- In a terminal window, type: *npm update* to install dependencies.
 
 ## Usage
 - node ./app.js
-- Note: the use of forever module is recommended to keep the server running in case of crashes.
+- Note: We recommend forever module to keep the server running in case of crashes and server reboots.
 
+## General
 Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
