@@ -37,8 +37,10 @@ See: https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS
 - In a terminal window, type: *npm update* to install dependencies.
 
 ## Usage
-- node ./app.js
-- Note: We recommend forever module to keep the server running in case of crashes and server reboots.
+- cd to the directory where app.js is contained
+- type: node ./app.js 
+- press enter/return
+-- Note: We recommend forever module to keep the server running in case of crashes and server reboots.
 
 ## General
 Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
