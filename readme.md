@@ -3,21 +3,20 @@ ASFM Near Space Program 2017
 Uplink Server to relay and persist capsule Messages for telemetry
 
 ## What is it?
-This app is ment to be kept running as a server to receive messages transmitted by the capsule
-either by the cellular modem or the satellite modem. 
+This app is designed to keep running as a server to receive messages transmitted by the capsule at any time either via cellular modem or Iridium Satellite modem (RockBlock module).
 
-It will use express http end points (and particle API) to await new messages and store them on a file locally 
-upon arrival. 
+Uses node express module for http end-point (and the particle API) to await for messages.
+When a message arrives it persists them in a local file for later retrieval.
+It also relays the message to any ground control app connected to the server at that moment.
+*See:* [Ground Control's Git Repository](https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS) 
 
-GroundControl apps connected to the server will also receive in realtime messages gathered and relayed by the server.
-See: https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS
-
+Ground control app connects to the server using Sockets technology via Socket.io framework.
 
 ## Requirements + Setup
 
 ### Sat WebHook/Delivery Groups
-- Visit: rockblock.rock7.com website and setup a delivery group with endpoing: http://yourserver.com:4200/satcom
--- Note1: Change :4200 to the defined port in setup.json file.
+- Visit: [rockblock.rock7.com](https://rockblock.rock7.com) & set a delivery group to endpoing: http://yourserver.com:4200/satcom
+...Note: Change: *4200* to the defined port in *setup.json* file.
 
 ### Cell Modem (Particle.io) WebHook/Integration
 - Visit www.particle.io 
@@ -32,15 +31,18 @@ See: https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS
 - Node JS (Tested with v8.9.1 on MacOS High Sierra)
 
 ### Setup
+- open a terminal window
+- cd to the directory where *app.js* file is contained
 - Rename the *setup-sample.json* file to *setup.json*
 - Edit values in the file with your desired values
 - In a terminal window, type: *npm update* to install dependencies.
 
 ## Usage
-- cd to the directory where app.js is contained
-- type: node ./app.js 
-- press enter/return
--- Note: We recommend forever module to keep the server running in case of crashes and server reboots.
+- open a terminal window
+- cd to the directory where *app.js* file is contained
+- type: *node ./app.js*
+- press *enter/return*
+⋅⋅⋅Note: We recommend forever module to keep the server running in case of crashes and server reboots.**
 
-## General
-Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
+## General Info
+######Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
