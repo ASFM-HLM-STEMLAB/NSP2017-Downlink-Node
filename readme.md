@@ -7,16 +7,19 @@ This app is designed to keep running as a server to receive messages transmitted
 
 Uses node express module for http end-point (and the particle API) to await for messages.
 When a message arrives it persists them in a local file for later retrieval.
-It also relays the message to any ground control app connected to the server at that moment.
+Will also relay new messages to all ground control apps connected.
+
+Also included is an http console to interact with the capsule and the server at any time: *http://yourserver.com:4200/*
 *See:* [Ground Control's Git Repository](https://github.com/ASFM-HLM-STEMLAB/NSP2017-GroundControl-iOS) 
 
-Ground control app connects to the server using Sockets technology via Socket.io framework.
+Ground control app connects to the server using Sockets technology via Socket.io framework for realtime comunications.
+
 
 ## Requirements + Setup
 
 ### Sat WebHook/Delivery Groups
 - Visit: [rockblock.rock7.com](https://rockblock.rock7.com) & set a delivery group to endpoing: http://yourserver.com:4200/satcom
-...Note: Change: *4200* to the defined port in *setup.json* file.
+...#### Change: *4200* to your desired port in *setup.json* file.
 
 ### Cell Modem (Particle.io) WebHook/Integration
 - Visit www.particle.io 
@@ -42,7 +45,7 @@ Ground control app connects to the server using Sockets technology via Socket.io
 - cd to the directory where *app.js* file is contained
 - type: *node ./app.js*
 - press *enter/return*
-⋅⋅⋅Note: We recommend forever module to keep the server running in case of crashes and server reboots.**
+⋅⋅⋅Note: We recommend forever module to keep the server running in case of crashes and server reboots
 
 ## General Info
-######Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
+###### Designed and created at ASFM Monterrey Mexico, 2017 @ Humberto Lobo Morales STEM LAB
