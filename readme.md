@@ -1,4 +1,4 @@
-# NSP2017-Uplink-Node
+# NSP2017-Downlink-Node
 ASFM Near Space Program 2017
 Uplink/Downlink Server to relay and persist capsule Messages for telemetry and realtime monitoring.
 
