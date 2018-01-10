@@ -1,7 +1,7 @@
 {
-  "name": "hlm1-uplink",
+  "name": "hlm1-downlink",
   "version": "1.0.0",
-  "description": "HLM1 Uplink Server",
+  "description": "HLM1 Downlink Server",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
