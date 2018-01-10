@@ -38,9 +38,11 @@ var bot = new SlackBot({
 // ********************************
 // * Particle.io API 
 // *
+var token;
+
 particle.login({username: Setup.particleUsername, password: Setup.particlePassword}).then(
   function(data) {  	
-    var token = data.body.access_token;
+    token = data.body.access_token;
     console.log('[PARTICLE API] Connected with KEY:.', token);
     
     particle.getEventStream({ deviceId: Setup.particleDeviceId, name: 'S', auth: token }).then(function(stream) {
@@ -169,6 +171,9 @@ socket.on('GETLOGFILE', function (name, fn) {
 
 // * Called by the app to send data/commands to the capsule's Cell Modem
 socket.on('TXC', function (datas) {
+
+if (datas.length <= 0) { return; }
+
  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
 
  fnPr.then(
