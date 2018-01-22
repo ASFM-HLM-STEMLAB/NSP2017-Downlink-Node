@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "dateformat": "^3.0.2",
     "express": "^4.16.2",
     "jquery": "^3.2.1",
     "particle-api-js": "^7.0.1",

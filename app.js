@@ -22,6 +22,8 @@ var fs = require('fs');
 var SlackBot = require('slackbots');
 var Particle = require('particle-api-js');
 var Setup = require('./setup.json');
+var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'never'};
+var dateFormat = require('dateformat');
 
 var particle = new Particle();
 
@@ -94,7 +96,7 @@ app.post('/cellular', function(req, res) {
   var rawData = published_at + " | " + "cell," + data;
 
   if (event == 'c') {
-    decodeTelemetryToFile('cellular', rawData);       
+    decodeTelemetryToFile('cellular', rawData);
     res.send("OK");
     return;
   }
@@ -126,11 +128,26 @@ app.post('/satcom', function(req, res) {
 // *
 function decodeTelemetryToFile(source, rawData) {  
   var fields = rawData.split(",");  
-  var lat = fields[1]; 
-  var lon = fields[2]; 
-  var alt = fields[3]; 
+  var lat = fields[4]; 
+  var lon = fields[5]; 
+  var alt = fields[6]; 
+  var spd = fields[7];
+  var hdg = fields[8];
+  var timeStampString = fields[0].split("|")[0].trim();
+  var timeStamp = new Date(timeStampString);  
   var googleMapsLink = "<http://www.google.com/maps/place/" + lat + "," +  lon + ">\n";
-  var slack = "*[" + source + "]*\n" + "`MAP:` " + googleMapsLink + "`RAW:`" + rawData + "\n";
+  var slack = "*[" + source + "]*\n" + "`MAP:` " + googleMapsLink + "`RAW:`" + rawData + "\n";  
+  
+
+
+var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
+
+  capsule.lat = lat;
+  capsule.lon = lon;
+  capsule.alt = alt;
+  capsule.spd = spd;
+  capsule.hdg = hdg;
+  capsule.timeStamp = timeStampStringFormated;
 
   var params = {
     icon_emoji: ':rocket:'
@@ -143,10 +160,13 @@ function decodeTelemetryToFile(source, rawData) {
   }
 
   fs.appendFileSync(fileName, rawData + '\n');        
-  io.emit('c', rawData); 
+  io.emit('c', rawData);   
   bot.postMessageToChannel('tracking', slack, params);
   fs.appendFileSync("datalog.txt", rawData + '\n');
-  console.log("[DECODED] " + rawData);
+  console.log("[INCOMING] " + rawData);
+
+
+  io.emit('POS',  capsule);
 }
 
 
@@ -169,6 +189,14 @@ socket.on('GETLOGFILE', function (name, fn) {
       });
 });
 
+socket.on('PING',  function (name, fn) {
+	fn("PONG");
+});
+
+  socket.on('POS', function (name, fn) {
+    fn(capsule);    
+  });
+
 // * Called by the app to send data/commands to the capsule's Cell Modem
 socket.on('TXC', function (datas) {
 
@@ -190,6 +218,7 @@ if (datas.length <= 0) { return; }
   socket.on('TXS', function (data) {
     console.log("[TODO] A Request to send to SATCOM");
   });
+
 });
 
 
