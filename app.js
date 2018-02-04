@@ -93,7 +93,7 @@ app.post('/cellular', function(req, res) {
   var data = req.body.data;
   var published_at = req.body.published_at;
   var coreid = req.body.coreid;
-  var rawData = published_at + " | " + "cell," + data;
+  var rawData = published_at + " | " + "cel," + data;
 
   if (event == 'c') {
     decodeTelemetryToFile('cellular', rawData);
@@ -128,11 +128,11 @@ app.post('/satcom', function(req, res) {
 // *
 function decodeTelemetryToFile(source, rawData) {  
   var fields = rawData.split(",");  
-  var lat = fields[4]; 
-  var lon = fields[5]; 
-  var alt = fields[6]; 
-  var spd = fields[7];
-  var hdg = fields[8];
+  var lat = fields[3]; 
+  var lon = fields[4]; 
+  var alt = fields[5]; 
+  var spd = fields[6];
+  var hdg = fields[7];
   var timeStampString = fields[0].split("|")[0].trim();
   var timeStamp = new Date(timeStampString);  
   var googleMapsLink = "<http://www.google.com/maps/place/" + lat + "," +  lon + ">\n";
