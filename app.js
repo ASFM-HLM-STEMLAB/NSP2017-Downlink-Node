@@ -22,7 +22,7 @@ var fs = require('fs');
 var SlackBot = require('slackbots');
 var Particle = require('particle-api-js');
 var Setup = require('./setup.json');
-var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'never'};
+var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'never', gpsTimeStamp:0101240000};
 var dateFormat = require('dateformat');
 
 var particle = new Particle();
@@ -88,21 +88,21 @@ app.get('/datalog', function (req, res) { //Both
 // * Telemetry End Points (Used by 3d Party provider webhooks)
 // *
 // * --Particle.io WebHook EndPoints--
-app.post('/cellular', function(req, res) {
-  var event = req.body.event;
-  var data = req.body.data;
-  var published_at = req.body.published_at;
-  var coreid = req.body.coreid;
-  var rawData = published_at + " | " + "cel," + data;
+// app.post('/cellular', function(req, res) {
+//   var event = req.body.event;
+//   var data = req.body.data;
+//   var published_at = req.body.published_at;
+//   var coreid = req.body.coreid;
+//   var rawData = published_at + " | " + "cel," + data;
 
-  if (event == 'c') {
-    decodeTelemetryToFile('cellular', rawData);
-    res.send("OK");
-    return;
-  }
+//   if (event == 'c') {
+//     decodeTelemetryToFile('cellular', rawData);
+//     res.send("OK");
+//     return;
+//   }
 
-  res.send("ERROR");
-});
+//   res.send("ERROR");
+// });
 
 // * --RockBlock Iridium Modem WebHook EndPoints--
 app.post('/satcom', function(req, res) {
@@ -127,20 +127,25 @@ app.post('/satcom', function(req, res) {
 // * Used by either Cell or Sat EndPoints
 // *
 function decodeTelemetryToFile(source, rawData) {  
+  //A MESSAGE = TimeStamp, Lat, Lon, Alt, Speed, HDG, GPS_SATS, GPS_PRECISION, BATTLVL, IRIDIUM_SATS, INT_TEMP, STAGE
+  //B MESSAGE = TimeStamp, Lat, Lon, Alt, ExtTemp, ExtHum, ExtPress
   var fields = rawData.split(",");  
   var lat = fields[3]; 
   var lon = fields[4]; 
   var alt = fields[5]; 
   var spd = fields[6];
   var hdg = fields[7];
+  var gpsTimeStamp = fields[2];
+  
   var timeStampString = fields[0].split("|")[0].trim();
   var timeStamp = new Date(timeStampString);  
-  var googleMapsLink = "<http://www.google.com/maps/place/" + lat + "," +  lon + ">\n";
-  var slack = "*[" + source + "]*\n" + "`MAP:` " + googleMapsLink + "`RAW:`" + rawData + "\n";  
+
   
+  // var googleMapsLink = "<http://www.google.com/maps/place/" + lat + "," +  lon + ">\n";
+  // var slack = "*[" + source + "]*\n" + "`MAP:` " + googleMapsLink + "`RAW:`" + rawData + "\n";  
 
 
-var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
+  var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
 
   capsule.lat = lat;
   capsule.lon = lon;
@@ -148,6 +153,7 @@ var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
   capsule.spd = spd;
   capsule.hdg = hdg;
   capsule.timeStamp = timeStampStringFormated;
+  capsule.gpsTimeStamp = gpsTimeStamp;
 
   var params = {
     icon_emoji: ':rocket:'
@@ -160,12 +166,11 @@ var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
   }
 
   fs.appendFileSync(fileName, rawData + '\n');        
-  io.emit('c', rawData);   
-  bot.postMessageToChannel('tracking', slack, params);
+  // bot.postMessageToChannel('tracking', slack, params);
   fs.appendFileSync("datalog.txt", rawData + '\n');
   console.log("[INCOMING] " + rawData);
 
-
+  io.emit('RAW', rawData);
   io.emit('POS',  capsule);
 }
 
