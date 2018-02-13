@@ -88,21 +88,17 @@ app.get('/datalog', function (req, res) { //Both
 // * Telemetry End Points (Used by 3d Party provider webhooks)
 // *
 // * --Particle.io WebHook EndPoints--
-// app.post('/cellular', function(req, res) {
-//   var event = req.body.event;
-//   var data = req.body.data;
-//   var published_at = req.body.published_at;
-//   var coreid = req.body.coreid;
-//   var rawData = published_at + " | " + "cel," + data;
+app.post('/test', function(req, res) {
+  var event = req.body.event;
+  var data = req.body.data;
+  var published_at = req.body.published_at;
+  var coreid = req.body.coreid;
+  var rawData = published_at + " | " + "cel," + data;
 
-//   if (event == 'c') {
-//     decodeTelemetryToFile('cellular', rawData);
-//     res.send("OK");
-//     return;
-//   }
-
-//   res.send("ERROR");
-// });
+  decodeTelemetryToFile('cellular', rawData);
+  res.send("OK");
+  
+});
 
 // * --RockBlock Iridium Modem WebHook EndPoints--
 app.post('/satcom', function(req, res) {
