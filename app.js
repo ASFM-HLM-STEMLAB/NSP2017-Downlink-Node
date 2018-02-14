@@ -24,6 +24,7 @@ var Particle = require('particle-api-js');
 var Setup = require('./setup.json');
 var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'never', gpsTimeStamp:0101240000};
 var dateFormat = require('dateformat');
+var timerSeconds = 0;
 
 var particle = new Particle();
 
@@ -220,8 +221,32 @@ if (datas.length <= 0) { return; }
     console.log("[TODO] A Request to send to SATCOM");
   });
 
+  socket.on('TIMESTART', function (data) {
+	startTimer();  	 
+  });
+
 });
 
+function startTimer() {
+	setInterval(() => {
+		timerSeconds++;
+		var resp = String(timerSeconds);		
+		 fs.writeFileSync("timeSync.txt", timerSeconds);        
+		 io.emit('TSYNC',resp); //JSON.stringify(datar, null, 4));      
+	}, 1000);
+
+}
+
+function loadPersistedTime() {
+	fs.readFile('timeSync.txt', function(err, buf) {
+		if (!err) {
+  			console.log("[SyncTime] : " + buf.toString());
+  			timerSeconds = buf
+  		} else {
+  			console.log("[SyncTime] : NOT FOUND");
+  		}
+	});
+}
 
 // ********************************
 // * Helper Methods 
@@ -237,6 +262,8 @@ function hex2bin(hex)
   return String.fromCharCode.apply(String, bytes);    
 }
 
+loadPersistedTime();
+startTimer();
 // ******************************** * ******************************** * 
 // * Boilerplate code to start the server
 // * 
