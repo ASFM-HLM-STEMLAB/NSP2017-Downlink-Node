@@ -205,6 +205,8 @@ socket.on('TXC', function (datas) {
 
 if (datas.length <= 0) { return; }
 
+ if (checkForTimeCommands(datas)) { return }
+
  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
 
  fnPr.then(
@@ -236,7 +238,6 @@ if (datas.length <= 0) { return; }
 
    socket.on('TIMESET', function (data, fn) {
     timerSeconds =  parseInt(data);
-
   });
 
 });
@@ -279,11 +280,39 @@ function loadPersistedTime() {
 	fs.readFile('timeSync.txt', function(err, buf) {
 		if (!err) {
   			console.log("[SyncTime] : " + buf.toString());
-  			timerSeconds = -50;//buf
+  			timerSeconds = buf
   		} else {
   			console.log("[SyncTime] : NOT FOUND = 0");
   		}
 	});
+}
+
+function checkForTimeCommands(datas) {
+
+	if (datas == "timestart") { 
+		startTimer();
+		return true;
+	}
+
+	if (datas == "timepause") { 
+		pauseTimer();
+		return true;
+	}
+
+	if (datas == "timeclear") { 
+		clearTimer();
+		return true;
+	}
+
+	var tFields = datas.split(" ");
+	if (tFields[0] == "timeset") {			
+		if (tFields.length < 1) { return; }
+		var value = tFields[1];   	
+		timerSeconds =  parseInt(value);
+		return true;
+	}
+
+	return false;
 }
 
 // ********************************
