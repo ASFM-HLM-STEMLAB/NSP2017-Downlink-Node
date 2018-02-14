@@ -224,8 +224,12 @@ if (datas.length <= 0) { return; }
     console.log("[TODO] A Request to send to SATCOM");
   });
 
+  socket.on('GETTIME', function (data, fn) {
+    fn(timerSeconds);
+  });
+
   socket.on('TIMESTART', function (data) {
-	startTimer();  	 
+	 startTimer();  	 
   });
 
   socket.on('TIMEPAUSE', function (data) {
@@ -237,7 +241,7 @@ if (datas.length <= 0) { return; }
   });
 
    socket.on('TIMESET', function (data, fn) {
-    timerSeconds =  parseInt(data);
+    setTimer(data);
   });
 
 });
@@ -280,11 +284,23 @@ function loadPersistedTime() {
 	fs.readFile('timeSync.txt', function(err, buf) {
 		if (!err) {
   			console.log("[SyncTime] : " + buf.toString());
-  			timerSeconds = buf
+  			setTimer(buf);
   		} else {
   			console.log("[SyncTime] : NOT FOUND = 0");
   		}
 	});
+}
+
+function setTimer(data) {
+
+    if (isNaN(data)) {
+      console.log("[SyncTime] NaN Found. Ignoring..");
+      return;
+    }
+
+    console.log("[SyncTime] Set: " + data);
+    var time =  parseInt(data);    
+    timerSeconds = time; 
 }
 
 function checkForTimeCommands(datas) {
@@ -305,10 +321,10 @@ function checkForTimeCommands(datas) {
 	}
 
 	var tFields = datas.split(" ");
-	if (tFields[0] == "timeset") {			
+	if (tFields[0] == "timeset") {
 		if (tFields.length < 1) { return; }
 		var value = tFields[1];   	
-		timerSeconds =  parseInt(value);
+		setTimer(value);
 		return true;
 	}
 
