@@ -25,6 +25,7 @@ var Setup = require('./setup.json');
 var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'never', gpsTimeStamp:0101240000};
 var dateFormat = require('dateformat');
 var timerSeconds = 0;
+var timerId = 0;
 
 var particle = new Particle();
 
@@ -225,25 +226,62 @@ if (datas.length <= 0) { return; }
 	startTimer();  	 
   });
 
+  socket.on('TIMEPAUSE', function (data) {
+    pauseTimer();
+  });
+
+  socket.on('TIMECLEAR', function (data) {
+    clearTimer();
+  });
+
+   socket.on('TIMESET', function (data, fn) {
+    timerSeconds =  parseInt(data);
+
+  });
+
 });
 
-function startTimer() {
-	setInterval(() => {
-		timerSeconds++;
-		var resp = String(timerSeconds);		
-		 fs.writeFileSync("timeSync.txt", timerSeconds);        
-		 io.emit('TSYNC',resp); //JSON.stringify(datar, null, 4));      
-	}, 1000);
 
+// ********************************
+// * Timer Methods 
+// * 
+// * Keep the timer in sync for the whole mission.
+function startTimer() {
+	if (timerId != 0) {
+		// clearInterval(timerId);
+		console.log("[WARNING] Attempt to re-run the timer. [One will be flushed]")
+		return;
+	}
+
+	timerId = setInterval(() => {
+		timerSeconds++;
+		var resp = String(timerSeconds);
+		 fs.writeFileSync("timeSync.txt", timerSeconds); 
+		 io.emit('TSYNC',resp); 
+	}, 1000);
+}
+
+function pauseTimer() {
+	clearInterval(timerId);
+	timerId = 0;
+}
+
+function clearTimer() {
+	clearInterval(timerId);
+	timerId = 0;
+	timerSeconds = 0;
+	var resp = String(timerSeconds);
+	fs.writeFileSync("timeSync.txt", timerSeconds); 
+	io.emit('TSYNC',resp); 
 }
 
 function loadPersistedTime() {
 	fs.readFile('timeSync.txt', function(err, buf) {
 		if (!err) {
   			console.log("[SyncTime] : " + buf.toString());
-  			timerSeconds = buf
+  			timerSeconds = -50;//buf
   		} else {
-  			console.log("[SyncTime] : NOT FOUND");
+  			console.log("[SyncTime] : NOT FOUND = 0");
   		}
 	});
 }
