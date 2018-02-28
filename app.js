@@ -183,6 +183,10 @@ io.on('connection', function (socket) {
   socket.emit('HELLO', { 'version': '1.0' });
   io.emit('i',  '[NEW CONNECTION]');
 
+  var resp = String(timerSeconds);
+  socket.emit('TSYNC',resp); 
+  
+
 
 //  Called by the app (using withAkn) to get all the messages stored in the log files. [telemetry]
 socket.on('GETLOGFILE', function (name, fn) {
@@ -225,8 +229,12 @@ if (datas.length <= 0) { return; }
     console.log("[TODO] A Request to send to SATCOM");
   });
 
+  socket.on('GETTIME', function (data, fn) {
+    fn(timerSeconds);
+  });
+
   socket.on('TIMESTART', function (data) {
-	startTimer();  	 
+	 startTimer();  	 
   });
 
   socket.on('TIMEPAUSE', function (data) {
@@ -237,8 +245,9 @@ if (datas.length <= 0) { return; }
     clearTimer();
   });
 
-   socket.on('TIMESET', function (data, fn) {
-    timerSeconds =  parseInt(data);
+   socket.on('TIMESET', function (data, fn) {    
+    setTimer(data);
+    fn("OK");
   });
 
 });
@@ -269,10 +278,10 @@ function startTimer() {
 		timerSeconds += delta;
 
 		var resp = String(timerSeconds);
-		 fs.writeFileSync("timeSync.txt", timerSeconds); 
-		 io.emit('TSYNC',resp); 
+		persistTimer(timerSeconds);
 	}, 1000);
 }
+
 
 function pauseTimer() {
 	clearInterval(timerId);
@@ -300,6 +309,26 @@ function loadPersistedTime() {
 	});
 }
 
+function setTimer(data) {
+    if (data == "")  { data = "0" }
+
+    if (isNaN(data)) {
+      console.log("[SyncTime] NaN Found. Ignoring..");
+      return;
+    }
+
+    console.log("[SyncTime] Set: " + data);
+    var time =  parseInt(data);    
+    timerSeconds = time; 
+    persistTimer(timerSeconds);
+}
+
+function persistTimer(timerSeconds) {
+   fs.writeFileSync("timeSync.txt", timerSeconds); 
+   var resp = String(timerSeconds);
+   io.emit('TSYNC',resp); 
+}
+
 function checkForTimeCommands(datas) {
 
 	if (datas == "timestart") { 
@@ -318,10 +347,11 @@ function checkForTimeCommands(datas) {
 	}
 
 	var tFields = datas.split(" ");
-	if (tFields[0] == "timeset") {			
-		if (tFields.length < 1) { return; }
-		var value = tFields[1];   	
-		timerSeconds =  parseInt(value);
+  console.log(datas);
+	if (tFields[0] == "timeset") {    
+		if (tFields.length < 1 || tFields.length > 2) { return; }    
+		var value = tFields[1];   	    
+		setTimer(value);
 		return true;
 	}
 
@@ -343,7 +373,6 @@ function hex2bin(hex)
 }
 
 loadPersistedTime();
-startTimer();
 // ******************************** * ******************************** * 
 // * Boilerplate code to start the server
 // * 
