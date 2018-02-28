@@ -26,6 +26,7 @@ var capsule = {lat:25.659335,lon:-100.446327, alt:0, spd:0, hdg:0, timeStamp:'ne
 var dateFormat = require('dateformat');
 var timerSeconds = 0;
 var timerId = 0;
+var lastTimerTick = 0;
 
 var particle = new Particle();
 
@@ -255,7 +256,18 @@ function startTimer() {
 	}
 
 	timerId = setInterval(() => {
-		timerSeconds++;
+		var d = new Date();
+		var seconds = Math.round(d.getTime() / 1000);
+		var delta = seconds - lastTimerTick;
+		
+		if (lastTimerTick == 0) {
+			delta = 1;
+		}
+
+		lastTimerTick = seconds;
+
+		timerSeconds += delta;
+
 		var resp = String(timerSeconds);
 		 fs.writeFileSync("timeSync.txt", timerSeconds); 
 		 io.emit('TSYNC',resp); 
@@ -264,6 +276,7 @@ function startTimer() {
 
 function pauseTimer() {
 	clearInterval(timerId);
+	lastTimerTick = 0;
 	timerId = 0;
 }
 
@@ -280,7 +293,7 @@ function loadPersistedTime() {
 	fs.readFile('timeSync.txt', function(err, buf) {
 		if (!err) {
   			console.log("[SyncTime] : " + buf.toString());
-  			timerSeconds = buf
+  			timerSeconds = parseInt(buf);
   		} else {
   			console.log("[SyncTime] : NOT FOUND = 0");
   		}
