@@ -46,16 +46,16 @@ var bot = new SlackBot({
 var token;
 
 particle.login({username: Setup.particleUsername, password: Setup.particlePassword}).then(
-  function(data) {  	
+  function(data) {    
     token = data.body.access_token;
     console.log('[PARTICLE API] Connected with KEY:.', token);
     
     particle.getEventStream({ deviceId: Setup.particleDeviceId, name: 'S', auth: token }).then(function(stream) {
      stream.on('event', function(data) {
-      console.log("[PARTICLE] Event Detected: " + data.data);  				
+      console.log("[PARTICLE] Event Detected: " + data.data);         
       var transmit_time = data.published_at;
-      var rawData = transmit_time + " | " + "cel," + data.data;   				
-      decodeTelemetryToFile('cellular', rawData);  				
+      var rawData = transmit_time + " | " + "cel," + data.data;           
+      decodeTelemetryToFile('cellular', rawData);         
     });
    });
   },
@@ -198,14 +198,64 @@ socket.on('GETLOGFILE', function (name, fn) {
 });
 
 socket.on('PING',  function (name, fn) {
-	fn("PONG");
+  fn("PONG");
 });
 
   socket.on('POS', function (name, fn) {
     fn(capsule);    
   });
 
-// * Called by the app to send data/commands to the capsule's Cell Modem
+
+// * Called by the app to send data/commands to the capsule's Cell Modem [NEW WITH AKN]
+socket.on('TXCA', function (datas, fn) {
+  if (datas.length <= 0) { return; }
+
+  if (checkForTimeCommands(datas)) { 
+    fn("OK");
+    return;
+  }
+
+  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
+
+  fnPr.then(
+    function(datar) {
+      var resp = String(datar.body.return_value);
+      fn(resp); 
+      console.log("[PARTICLE] OK: " + resp);
+    }, function(err) {
+      console.log("[PARTICLE] Error: " + err);
+    }).catch(function(err) {
+      console.log("[PARTICLE] Error: " + err);
+    });
+
+  socket.on('GETTIME', function (data, fn) {
+    fn(timerSeconds);
+  });
+
+  socket.on('TIMESTART', function (data, fn) {
+    startTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMEPAUSE', function (data, fn) {
+    pauseTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMECLEAR', function (data, fn) {
+    clearTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMESET', function (data, fn) {
+    setTimer(data);
+    fn("OK");
+  });
+
+
+});
+
+// * Called by the app to send data/commands to the capsule's Cell Modem [LEGACY]
 socket.on('TXC', function (datas) {
 
 if (datas.length <= 0) { return; }
@@ -217,10 +267,10 @@ if (datas.length <= 0) { return; }
  fnPr.then(
    function(datar) {
     var resp = String(datar.body.return_value);
-	    socket.emit('response',resp); //JSON.stringify(datar, null, 4));      
+      socket.emit('response',resp); //JSON.stringify(datar, null, 4));      
     }, function(err) {
-      console.log("[PARTICLE] Error: " + err);	    
-	  });
+      console.log("[PARTICLE] Error: " + err);      
+    });
 });
 
   // *  Called by the app to send data/commands to the capsule's Cell Modem
@@ -233,22 +283,22 @@ if (datas.length <= 0) { return; }
     fn(timerSeconds);
   });
 
-  socket.on('TIMESTART', function (data) {
-	 startTimer();  	 
-  });
+  // socket.on('TIMESTART', function (data) {
+   // startTimer();    
+  // });
 
-  socket.on('TIMEPAUSE', function (data) {
-    pauseTimer();
-  });
+  // socket.on('TIMEPAUSE', function (data) {
+  //   pauseTimer();
+  // });
 
-  socket.on('TIMECLEAR', function (data) {
-    clearTimer();
-  });
+  // socket.on('TIMECLEAR', function (data) {
+  //   clearTimer();
+  // });
 
-   socket.on('TIMESET', function (data, fn) {    
-    setTimer(data);
-    fn("OK");
-  });
+  //  socket.on('TIMESET', function (data, fn) {    
+  //   setTimer(data);
+  //   fn("OK");
+  // });
 
 });
 
@@ -258,55 +308,55 @@ if (datas.length <= 0) { return; }
 // * 
 // * Keep the timer in sync for the whole mission.
 function startTimer() {
-	if (timerId != 0) {
-		// clearInterval(timerId);
-		console.log("[WARNING] Attempt to re-run the timer. [One will be flushed]")
-		return;
-	}
+  if (timerId != 0) {
+    // clearInterval(timerId);
+    console.log("[WARNING] Attempt to re-run the timer. [One will be flushed]")
+    return;
+  }
 
-	timerId = setInterval(() => {
-		var d = new Date();
-		var seconds = Math.round(d.getTime() / 1000);
-		var delta = seconds - lastTimerTick;
-		
-		if (lastTimerTick == 0) {
-			delta = 1;
-		}
+  timerId = setInterval(() => {
+    var d = new Date();
+    var seconds = Math.round(d.getTime() / 1000);
+    var delta = seconds - lastTimerTick;
+    
+    if (lastTimerTick == 0) {
+      delta = 1;
+    }
 
-		lastTimerTick = seconds;
+    lastTimerTick = seconds;
 
-		timerSeconds += delta;
+    timerSeconds += delta;
 
-		var resp = String(timerSeconds);
-		persistTimer(timerSeconds);
-	}, 1000);
+    var resp = String(timerSeconds);
+    persistTimer(timerSeconds);
+  }, 1000);
 }
 
 
 function pauseTimer() {
-	clearInterval(timerId);
-	lastTimerTick = 0;
-	timerId = 0;
+  clearInterval(timerId);
+  lastTimerTick = 0;
+  timerId = 0;
 }
 
 function clearTimer() {
-	clearInterval(timerId);
-	timerId = 0;
-	timerSeconds = 0;
-	var resp = String(timerSeconds);
-	fs.writeFileSync("timeSync.txt", timerSeconds); 
-	io.emit('TSYNC',resp); 
+  clearInterval(timerId);
+  timerId = 0;
+  timerSeconds = 0;
+  var resp = String(timerSeconds);
+  fs.writeFileSync("timeSync.txt", timerSeconds); 
+  io.emit('TSYNC',resp); 
 }
 
 function loadPersistedTime() {
-	fs.readFile('timeSync.txt', function(err, buf) {
-		if (!err) {
-  			console.log("[SyncTime] : " + buf.toString());
-  			timerSeconds = parseInt(buf);
-  		} else {
-  			console.log("[SyncTime] : NOT FOUND = 0");
-  		}
-	});
+  fs.readFile('timeSync.txt', function(err, buf) {
+    if (!err) {
+        console.log("[SyncTime] : " + buf.toString());
+        timerSeconds = parseInt(buf);
+      } else {
+        console.log("[SyncTime] : NOT FOUND = 0");
+      }
+  });
 }
 
 function setTimer(data) {
@@ -331,31 +381,30 @@ function persistTimer(timerSeconds) {
 
 function checkForTimeCommands(datas) {
 
-	if (datas == "timestart") { 
-		startTimer();
-		return true;
-	}
+  if (datas == "timestart") { 
+    startTimer();
+    return true;
+  }
 
-	if (datas == "timepause") { 
-		pauseTimer();
-		return true;
-	}
+  if (datas == "timepause") { 
+    pauseTimer();
+    return true;
+  }
 
-	if (datas == "timeclear") { 
-		clearTimer();
-		return true;
-	}
+  if (datas == "timeclear") { 
+    clearTimer();
+    return true;
+  }
 
-	var tFields = datas.split(" ");
-  console.log(datas);
-	if (tFields[0] == "timeset") {    
-		if (tFields.length < 1 || tFields.length > 2) { return; }    
-		var value = tFields[1];   	    
-		setTimer(value);
-		return true;
-	}
+  var tFields = datas.split(" ");  
+  if (tFields[0] == "timeset") {    
+    if (tFields.length < 1 || tFields.length > 2) { return; }    
+    var value = tFields[1];         
+    setTimer(value);
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 // ********************************
