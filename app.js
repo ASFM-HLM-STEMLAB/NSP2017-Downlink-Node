@@ -113,8 +113,8 @@ app.post('/satcom', function(req, res) {
   var iridium_cep = req.body.iridium_cep;
   var data = req.body.data;
   data = hex2bin(data);    
-  var rawData = transmit_time + " | " + "sat," + data; 
-
+  var rawData = "2018-03-12T01:40:31.672Z | " + "sat," + data;
+  console.log("[INCOMING SAT]: " + rawData);
   decodeTelemetryToFile('satcom', rawData);       
   res.send("OK");
   return;  
