@@ -113,8 +113,9 @@ app.post('/satcom', function(req, res) {
   var iridium_cep = req.body.iridium_cep;
   var data = req.body.data;
   data = hex2bin(data);  
+  var d = new Date();
 
-  var timeStampStringFormated = Date().toISOString()
+  var timeStampStringFormated = d.toISOString();
   var rawData = timeStampStringFormated + " | " + "sat," + data;
   console.log("[SAT RAW]: " + rawData);
   decodeTelemetryToFile('satcom', rawData);       
