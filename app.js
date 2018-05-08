@@ -59,7 +59,7 @@ particle.login({username: Setup.particleUsername, password: Setup.particlePasswo
     });
    });
 
-    particle.getEventStream({ deviceId: Setup.particleDeviceId, name: 'R', auth: token }).then(function(stream) {
+    particle.getEventStream({ deviceId: 'mine', name: 'R', auth: token }).then(function(stream) {
      stream.on('event', function(data) {
       console.log("[PARTICLE] Radio Event Detected: " + data.data);  				
       var transmit_time = data.published_at;
@@ -221,6 +221,54 @@ socket.on('PING',  function (name, fn) {
 
 // * Called by the app to send data/commands to the capsule's Cell Modem [NEW WITH AKN]
 socket.on('TXCA', function (datas, fn) {
+  if (datas.length <= 0) { return; }
+
+  if (checkForTimeCommands(datas)) { 
+    fn("OK");
+    return;
+  }
+
+  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
+
+  fnPr.then(
+    function(datar) {
+      var resp = String(datar.body.return_value);
+      fn(resp); 
+      console.log("[PARTICLE] OK: " + resp);
+    }, function(err) {
+      console.log("[PARTICLE] Error: " + err);
+    }).catch(function(err) {
+      console.log("[PARTICLE] Error: " + err);
+    });
+
+  socket.on('GETTIME', function (data, fn) {
+    fn(timerSeconds);
+  });
+
+  socket.on('TIMESTART', function (data, fn) {
+    startTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMEPAUSE', function (data, fn) {
+    pauseTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMECLEAR', function (data, fn) {
+    clearTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMESET', function (data, fn) {
+    setTimer(data);
+    fn("OK");
+  });
+
+
+});
+
+socket.on('TXCR', function (datas, fn) {
   if (datas.length <= 0) { return; }
 
   if (checkForTimeCommands(datas)) { 
