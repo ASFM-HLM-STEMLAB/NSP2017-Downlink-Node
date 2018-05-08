@@ -276,7 +276,7 @@ socket.on('TXCR', function (datas, fn) {
     return;
   }
 
-  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
+  fnPr = particle.callFunction({ deviceId: Setup.particleRelayDeviceId, name: 'rdio', argument: datas, auth: token });
 
   fnPr.then(
     function(datar) {
