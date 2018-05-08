@@ -58,6 +58,16 @@ particle.login({username: Setup.particleUsername, password: Setup.particlePasswo
       decodeTelemetryToFile('cellular', rawData);  				
     });
    });
+
+    particle.getEventStream({ deviceId: Setup.particleDeviceId, name: 'R', auth: token }).then(function(stream) {
+     stream.on('event', function(data) {
+      console.log("[PARTICLE] Radio Event Detected: " + data.data);  				
+      var transmit_time = data.published_at;
+      var rawData = transmit_time + " | " + "rdio," + data.data;
+      decodeTelemetryToFile('cellular', rawData);  				
+    });
+   });
+
   },
   function (err) {
     console.log('[PARTICLE API] Unable to login.', err);
@@ -218,6 +228,25 @@ if (datas.length <= 0) { return; }
    function(datar) {
     var resp = String(datar.body.return_value);
 	    socket.emit('response',resp); //JSON.stringify(datar, null, 4));      
+    }, function(err) {
+      console.log("[PARTICLE] Error: " + err);	    
+	  });
+});
+
+
+// * Called by the app to send data/commands to the capsule's RADIO Modem
+socket.on('TXR', function (datas) {
+
+if (datas.length <= 0) { return; }
+
+ if (checkForTimeCommands(datas)) { return }
+
+ fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'rdio', argument: datas, auth: token });
+
+ fnPr.then(
+   function(datar) {
+    var resp = String(datar.body.return_value);
+	    socket.emit('response',resp); 
     }, function(err) {
       console.log("[PARTICLE] Error: " + err);	    
 	  });
