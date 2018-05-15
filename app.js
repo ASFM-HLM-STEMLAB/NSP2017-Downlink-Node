@@ -50,12 +50,12 @@ particle.login({username: Setup.particleUsername, password: Setup.particlePasswo
     token = data.body.access_token;
     console.log('[PARTICLE API] Connected with KEY:.', token);
     
-    particle.getEventStream({ deviceId: Setup.particleDeviceId, name: 'S', auth: token }).then(function(stream) {
+    particle.getEventStream({ deviceId: 'mine', name: 'S', auth: token }).then(function(stream) {
      stream.on('event', function(data) {
       console.log("[PARTICLE] Event Detected: " + data.data);         
       var transmit_time = data.published_at;
-      var rawData = transmit_time + " | " + "cel," + data.data;           
-      decodeTelemetryToFile('cellular', rawData);         
+      var rawData = transmit_time + " | " + "cel," + data.data;                 
+      decodeTelemetryToFile('cellular', rawData);     
     });
    });
 
@@ -63,7 +63,7 @@ particle.login({username: Setup.particleUsername, password: Setup.particlePasswo
      stream.on('event', function(data) {
       console.log("[PARTICLE] Radio Event Detected: " + data.data);  				
       var transmit_time = data.published_at;
-      var rawData = transmit_time + " | " + "rdio," + data.data;
+      var rawData = transmit_time + " | " + "rad," + data.data;
       decodeTelemetryToFile('cellular', rawData);  				
     });
    });
@@ -74,44 +74,6 @@ particle.login({username: Setup.particleUsername, password: Setup.particlePasswo
   }
   );
 
-
-// ********************************
-// * Standard HTTP Request Routes [Express]
-// * Used to read/download the log files directly from a web-browser
-// *
-app.get('/', function (req, res) {
-  res.sendFile(__dirname + '/index.html');   
-});
-
-app.get('/cellular', function (req, res) { //Only Cellular
-  res.sendFile(__dirname + '/cellular.txt');
-});
-
-app.get('/satcom', function (req, res) { //Only Satcom
-  res.sendFile(__dirname + '/satcom.txt');
-});
-
-app.get('/datalog', function (req, res) { //Both
-  res.sendFile(__dirname + '/datalog.txt');
-});
-
-
-
-// ********************************
-// * Telemetry End Points (Used by 3d Party provider webhooks)
-// *
-// * --Particle.io WebHook EndPoints--
-app.post('/test', function(req, res) {
-  var event = req.body.event;
-  var data = req.body.data;
-  var published_at = req.body.published_at;
-  var coreid = req.body.coreid;
-  var rawData = published_at + " | " + "cel," + data;
-
-  decodeTelemetryToFile('cellular', rawData);
-  res.send("OK");
-  
-});
 
 // * --RockBlock Iridium Modem WebHook EndPoints--
 app.post('/satcom', function(req, res) {
@@ -139,22 +101,31 @@ app.post('/satcom', function(req, res) {
 // * Used by either Cell or Sat EndPoints
 // *
 function decodeTelemetryToFile(source, rawData) {  
-  //A MESSAGE = TimeStamp, Lat, Lon, Alt, Speed, HDG, GPS_SATS, GPS_PRECISION, BATTLVL, IRIDIUM_SATS, INT_TEMP, STAGE
-  //B MESSAGE = TimeStamp, Lat, Lon, Alt, ExtTemp, ExtHum, ExtPress
+  // 0 Source String
+  // 1 GPS timestamp
+  // 2 lat
+  // 3 lon
+  // 4 alt
+  // 5 speed
+  // 6 heading
+  // 7 # of GPS Sats
+  // 8 GPS HDOP Value
+  // 9 Capsule Battery Level
+  // 10 Iridium Satellites
+  // 11 Capsule Internal Temp
+  // 12 Mission Stage String
+
   var fields = rawData.split(",");  
-  var lat = fields[3]; 
-  var lon = fields[4]; 
-  var alt = fields[5]; 
-  var spd = fields[6];
-  var hdg = fields[7];
-  var gpsTimeStamp = fields[2];
+  var gpsTimeStamp = fields[1];
+  var lat = fields[2]; 
+  var lon = fields[3]; 
+  var alt = fields[4]; 
+  var spd = fields[5];
+  var hdg = fields[6];
+  
   
   var timeStampString = fields[0].split("|")[0].trim();
   var timeStamp = new Date(timeStampString);  
-
-  
-  // var googleMapsLink = "<http://www.google.com/maps/place/" + lat + "," +  lon + ">\n";
-  // var slack = "*[" + source + "]*\n" + "`MAP:` " + googleMapsLink + "`RAW:`" + rawData + "\n";  
 
 
   var timeStampStringFormated = dateFormat(timeStamp, "mmm d @ HH:M:s");
@@ -167,10 +138,6 @@ function decodeTelemetryToFile(source, rawData) {
   capsule.timeStamp = timeStampStringFormated;
   capsule.gpsTimeStamp = gpsTimeStamp;
 
-  var params = {
-    icon_emoji: ':rocket:'
-  };
-
   if (source=='cellular') {
     fileName = 'cellular.txt';
   } else {
@@ -178,7 +145,6 @@ function decodeTelemetryToFile(source, rawData) {
   }
 
   fs.appendFileSync(fileName, rawData + '\n');        
-  // bot.postMessageToChannel('tracking', slack, params);
   fs.appendFileSync("datalog.txt", rawData + '\n');
   console.log("[INCOMING] " + rawData);
 
@@ -202,20 +168,44 @@ io.on('connection', function (socket) {
 
 
 //  Called by the app (using withAkn) to get all the messages stored in the log files. [telemetry]
-socket.on('GETLOGFILE', function (name, fn) {
- fs.readFile("datalog.txt",function(error, filedata){
-  if(error) throw error;                
-        var logfile = filedata.toString();
-        fn(logfile);
-      });
-});
+  socket.on('GETLOGFILE', function (name, fn) {
+   fs.readFile("datalog.txt",function(error, filedata){
+    if(error) throw error;                
+          var logfile = filedata.toString();
+          fn(logfile);
+        });
+  });
 
-socket.on('PING',  function (name, fn) {
-  fn("PONG");
-});
+  socket.on('PING',  function (name, fn) {
+    fn("PONG");
+  });
 
   socket.on('POS', function (name, fn) {
     fn(capsule);    
+  });
+
+  socket.on('GETTIME', function (data, fn) {
+    fn(timerSeconds);
+  });
+
+  socket.on('TIMESTART', function (data, fn) {
+    startTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMEPAUSE', function (data, fn) {
+    pauseTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMECLEAR', function (data, fn) {
+    clearTimer();
+    fn("OK");
+  });
+
+  socket.on('TIMESET', function (data, fn) {
+    setTimer(data);
+    fn("OK");
   });
 
 
@@ -240,33 +230,7 @@ socket.on('TXCA', function (datas, fn) {
     }).catch(function(err) {
       console.log("[PARTICLE] Error: " + err);
     });
-
-  socket.on('GETTIME', function (data, fn) {
-    fn(timerSeconds);
   });
-
-  socket.on('TIMESTART', function (data, fn) {
-    startTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMEPAUSE', function (data, fn) {
-    pauseTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMECLEAR', function (data, fn) {
-    clearTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMESET', function (data, fn) {
-    setTimer(data);
-    fn("OK");
-  });
-
-
-});
 
 socket.on('TXCR', function (datas, fn) {
   if (datas.length <= 0) { return; }
@@ -289,96 +253,55 @@ socket.on('TXCR', function (datas, fn) {
       console.log("[PARTICLE] Error: " + err);
     });
 
-  socket.on('GETTIME', function (data, fn) {
+});
+
+socket.on('GETTIME', function (data, fn) {
     fn(timerSeconds);
-  });
-
-  socket.on('TIMESTART', function (data, fn) {
-    startTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMEPAUSE', function (data, fn) {
-    pauseTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMECLEAR', function (data, fn) {
-    clearTimer();
-    fn("OK");
-  });
-
-  socket.on('TIMESET', function (data, fn) {
-    setTimer(data);
-    fn("OK");
-  });
-
-
 });
 
-// * Called by the app to send data/commands to the capsule's Cell Modem [LEGACY]
-socket.on('TXC', function (datas) {
+// // * Called by the app to send data/commands to the capsule's Cell Modem [LEGACY]
+// socket.on('TXC', function (datas) {
 
-if (datas.length <= 0) { return; }
+// if (datas.length <= 0) { return; }
 
- if (checkForTimeCommands(datas)) { return }
+//  if (checkForTimeCommands(datas)) { return }
 
- fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
+//  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'c', argument: datas, auth: token });
 
- fnPr.then(
-   function(datar) {
-    var resp = String(datar.body.return_value);
-      socket.emit('response',resp); //JSON.stringify(datar, null, 4));      
-    }, function(err) {
-      console.log("[PARTICLE] Error: " + err);      
-    });
-});
+//  fnPr.then(
+//    function(datar) {
+//     var resp = String(datar.body.return_value);
+//       socket.emit('response',resp); //JSON.stringify(datar, null, 4));      
+//     }, function(err) {
+//       console.log("[PARTICLE] Error: " + err);      
+//     });
+// });
 
 
-// * Called by the app to send data/commands to the capsule's RADIO Modem
-socket.on('TXR', function (datas) {
+// // * Called by the app to send data/commands to the capsule's RADIO Modem
+// socket.on('TXR', function (datas) {
 
-if (datas.length <= 0) { return; }
+// if (datas.length <= 0) { return; }
 
- if (checkForTimeCommands(datas)) { return }
+//  if (checkForTimeCommands(datas)) { return }
 
- fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'rdio', argument: datas, auth: token });
+//  fnPr = particle.callFunction({ deviceId: Setup.particleDeviceId, name: 'rdio', argument: datas, auth: token });
 
- fnPr.then(
-   function(datar) {
-    var resp = String(datar.body.return_value);
-	    socket.emit('response',resp); 
-    }, function(err) {
-      console.log("[PARTICLE] Error: " + err);	    
-	  });
-});
+//  fnPr.then(
+//    function(datar) {
+//     var resp = String(datar.body.return_value);
+// 	    socket.emit('response',resp); 
+//     }, function(err) {
+//       console.log("[PARTICLE] Error: " + err);	    
+// 	  });
+// });
 
   // *  Called by the app to send data/commands to the capsule's Cell Modem
   // * >>[Todo]<< [Not Implemented Yet]
-  socket.on('TXS', function (data) {
-    console.log("[TODO] A Request to send to SATCOM");
-  });
-
-  socket.on('GETTIME', function (data, fn) {
-    fn(timerSeconds);
-  });
-
-  // socket.on('TIMESTART', function (data) {
-   // startTimer();    
+  // socket.on('TXS', function (data) {
+  //   console.log("[TODO] A Request to send to SATCOM [NOT IMPLEMENTED]");
   // });
 
-  // socket.on('TIMEPAUSE', function (data) {
-  //   pauseTimer();
-  // });
-
-  // socket.on('TIMECLEAR', function (data) {
-  //   clearTimer();
-  // });
-
-  //  socket.on('TIMESET', function (data, fn) {    
-  //   setTimer(data);
-  //   fn("OK");
-  // });
 
 });
 
